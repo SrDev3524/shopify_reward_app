@@ -1,0 +1,88 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/prisma/client"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["hubspot", "insights", "public", "setup_tables"]
+}
+
+model Customer {
+  id                String   @id @default(cuid())
+  shopifyCustomerId String   @unique
+  email             String
+  firstName         String?
+  lastName          String?
+  totalEarned       Int      @default(0)
+  available         Int      @default(0)
+  used              Int      @default(0)
+  lastActivity      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  earnings     PointEarning[]
+  allocations  PointAllocation[]
+
+  @@map("customers")
+  @@schema("public")
+
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  story       String?
+  breakdown   Json?
+  target      Int
+  current     Int     @default(0)
+  progress    Float   @default(0)
+  image       String?
+  status      String  @default("active")
+  order       Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  allocations PointAllocation[]
+
+  @@map("projects")
+  @@schema("public")
+
+}
+
+model PointEarning {
+  id           String   @id @default(cuid())
+  customerId   String?
+  orderId      String
+  orderTotal   Float
+  netSales     Float
+  points       Int
+  isGuest      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  customer     Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("point_earnings")
+  @@schema("public")
+
+}
+
+model PointAllocation {
+  id         String   @id @default(cuid())
+  customerId String?
+  projectId  String
+  points     Int
+  type       String   @default("manual")
+  source     String?
+  createdAt  DateTime @default(now())
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  project    Project   @relation(fields: [projectId], references: [id])
+
+  @@map("point_allocations")
+  @@schema("public")
+}
